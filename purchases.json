@@ -1,0 +1,13 @@
+{
+  "purchases": [
+    {
+      "nama": "fadli",
+      "kereta": "KA Argo Lawu",
+      "tujuan": "Yogyakarta",
+      "kelas": "Eksekutif",
+      "jumlah": 2,
+      "tanggal": "2025-10-24",
+      "total": 1500000
+    }
+  ]
+}

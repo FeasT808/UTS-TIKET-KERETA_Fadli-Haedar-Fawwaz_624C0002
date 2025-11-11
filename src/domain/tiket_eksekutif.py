@@ -18,3 +18,15 @@ class TiketEksekutif(TiketKereta):
 
     def deskripsi(self) -> str:
         return f"[EKSEKUTIF] {self.nama_kereta} -> {self.tujuan} - Rp {int(self.harga_dasar):,}/orang + Lounge"
+    
+    def to_dict(self):
+         return {
+            "nama_kereta": self.nama_kereta,
+            "tujuan": self.tujuan,
+            "tanggal": self.tanggal,
+            "jumlah": self.jumlah,
+            "kursi": self.kursi,
+            "harga_dasar": self.harga_dasar,
+            "total": self.hitung_total(),
+            "kelas": self.__class__.__name__
+        }

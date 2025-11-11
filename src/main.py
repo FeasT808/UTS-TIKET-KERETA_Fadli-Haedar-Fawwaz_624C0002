@@ -7,6 +7,13 @@ from domain.tiket_ekonomi import TiketEkonomi
 from domain.tiket_bisnis import TiketBisnis
 from domain.tiket_eksekutif import TiketEksekutif
 from domain.pelanggan import Pelanggan
+from domain.persistence import FileManager
+
+file_manager = FileManager()
+purchases = file_manager.muat_data()  # baca file JSON saat start
+
+# setelah user membeli tiket dan konfirmasi 'y'
+file_manager.simpan_data(purchases)
 
 SAVE_FILE = os.path.join(os.path.dirname(__file__), "..", "purchases.json")
 SAVE_FILE = os.path.abspath(SAVE_FILE)
@@ -64,10 +71,11 @@ def menu():
     while True:
         print("\n=== SISTEM TIKET KERETA API (UTS) ===")
         print("[1] Pesan Tiket")
-        print("[2] Lihat Daftar Tiket (contoh objek)")
+        print("[2] Lihat Daftar Tiket")
         print("[3] Lihat Ringkasan Pembelian")
-        print("[4] Keluar")
-        choice = input("Pilih (1-4): ").strip()
+        print("[4] Lihat Riwayat pembelian")
+        print("[5] Keluar")
+        choice = input("Pilih (1-5): ").strip()
         clear()
         if choice == "1":
             try:
@@ -106,6 +114,7 @@ def menu():
                 print(f"Total Harga    : Rp {int(total):,}")
                 konfirmasi = input("Konfirmasi pembelian? (y/n): ").strip().lower()
                 if konfirmasi == 'y':
+                    kursi_list = [f"A{10+i}" for i in range(jumlah)]
                     # simpan ringkasan sederhana
                     purchases.append({
                         "nama": str(pelanggan),
@@ -114,9 +123,11 @@ def menu():
                         "kelas": kelas,
                         "jumlah": jumlah,
                         "tanggal": tanggal,
+                        "harga_per_tiket": int(harga_dasar),
+                        "kursi": kursi_list,
                         "total": int(total)
                     })
-                    save_purchases(purchases)
+                    file_manager.simpan_data(purchases)
                     print(f"Terima kasih telah membeli tiket, {pelanggan}!")
                 else:
                     print("Pembelian dibatalkan.")
@@ -137,17 +148,31 @@ def menu():
                 print(t.deskripsi())
 
         elif choice == "3":
-            if not purchases:
+            data = file_manager.muat_data()
+            if not data:
                 print("Belum ada pembelian.")
             else:
-                total_semua = 0
-                print("--- RINGKASAN PEMBELIAN ---")
-                for i, p in enumerate(purchases, start=1):
-                    print(f"{i}. {p['nama']} | {p['kereta']} -> {p['tujuan']} | {p['kelas']} | {p['jumlah']} tiket | Rp {p['total']:,} | Tgl: {p['tanggal']}")
-                    total_semua += p['total']
-                print(f"\nTOTAL SEMUA: Rp {int(total_semua):,}")
+                # Ambil pembelian terakhir
+                last = data[-1]
+                print("--- [3] RINGKASAN PEMBELIAN  ---")
+                print(f"Nama Pembeli: {last['nama']}")
+                print(f"Kelas Dibeli: {last['kelas'].upper()}")
+                print(f"Jumlah Tiket: {last['jumlah']}")
+                print(f"TOTAL BAYAR: Rp {last['total']:,}")
+                print("\n--- Detail Tiket ---")
+            for i, kursi in enumerate(last.get("kursi", []), start=1):
+                print(f"  - Tiket {i}: {last['kereta']} | Kursi: {kursi} | Harga: Rp {last['harga_per_tiket']:,}")
 
         elif choice == "4":
+            data = file_manager.muat_data()
+            if not data:
+                print("Belum ada data tiket tersimpan.")
+            else:
+                print("--- RIWAYAT PEMBELIAN ---")
+                for i, t in enumerate(data, start=1):
+                    print(f"{i}. {t['kereta']} - {t['tujuan']} ({t['kelas']}) | {t['jumlah']} tiket | Total: Rp {t['total']:,}")
+
+        elif choice == "5":
             print("Keluar... Terima kasih.")
             break
         else:

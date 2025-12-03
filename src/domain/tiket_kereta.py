@@ -1,56 +1,74 @@
 # src/domain/tiket_kereta.py
+from __future__ import annotations
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 class TiketKereta(ABC):
     """
-    Class abstrak untuk tiket kereta.
-    Menyediakan enkapsulasi untuk harga dasar dan kursi (private attributes).
-    Subclass wajib mengimplementasikan hitung_total() dan deskripsi().
+    Abstraksi tiket kereta.
+    Enkapsulasi: __harga_dasar, __kursi (private) + property dgn validasi.
     """
-
-    def __init__(self, nama_kereta: str, tujuan: str, tanggal: str, jumlah: int, harga_dasar: float, kursi: str):
+    def __init__(self, nama_kereta: str, tujuan: str, tanggal: str,
+                 jumlah: int, harga_dasar: float, kursi: list[str]):
         self.nama_kereta = nama_kereta
         self.tujuan = tujuan
-        self.tanggal = tanggal
+        self.tanggal = self._validasi_tanggal(tanggal)
+        self.jumlah = self._validasi_jumlah(jumlah)
+        self.__harga_dasar = None
+        self.harga_dasar = harga_dasar    # via setter
+        self.__kursi = None
+        self.kursi = kursi                # via setter
 
-        # private attributes
-        self.__set_harga_dasar(harga_dasar)
-        self.__set_kursi(kursi)
-
-        # jumlah tiket (public, tapi kita validasi)
-        if not isinstance(jumlah, int) or jumlah <= 0:
-            raise ValueError("jumlah harus bilangan bulat positif")
-        self.jumlah = jumlah
-
-    # --- enkapsulasi harga_dasar ---
-    def __set_harga_dasar(self, value: float):
-        if not isinstance(value, (int, float)) or value < 0:
-            raise ValueError("harga dasar harus bilangan >= 0")
-        self.__harga_dasar = float(value)
-
-    def __get_harga_dasar(self) -> float:
+    # ===== Encapsulation: harga_dasar =====
+    @property
+    def harga_dasar(self) -> float:
         return self.__harga_dasar
 
-    harga_dasar = property(__get_harga_dasar, __set_harga_dasar)
+    @harga_dasar.setter
+    def harga_dasar(self, value: float):
+        if value is None or float(value) < 0:
+            raise ValueError("Harga dasar tidak boleh negatif/kosong.")
+        self.__harga_dasar = float(value)
 
-    # --- enkapsulasi kursi ---
-    def __set_kursi(self, value: str):
-        if not isinstance(value, str) or not value.strip():
-            raise ValueError("kursi tidak boleh kosong")
-        self.__kursi = value.strip()
-
-    def __get_kursi(self) -> str:
+    # ===== Encapsulation: kursi =====
+    @property
+    def kursi(self) -> list[str]:
         return self.__kursi
 
-    kursi = property(__get_kursi, __set_kursi)
+    @kursi.setter
+    def kursi(self, value: list[str]):
+        if not value or not all(isinstance(k, str) and k.strip() for k in value):
+            raise ValueError("Kursi wajib diisi dan berupa list string non-kosong.")
+        self.__kursi = value
 
-    # ---- abstrak methods ----
+    # ===== Validasi util =====
+    @staticmethod
+    def _validasi_jumlah(jml: int) -> int:
+        jml = int(jml)
+        if jml <= 0:
+            raise ValueError("Jumlah tiket harus > 0.")
+        return jml
+
+    @staticmethod
+    def _validasi_tanggal(s: str) -> str:
+        # Terima format YYYY-MM-DD; jika gagal tetap simpan string apa adanya agar fleksibel
+        try:
+            datetime.strptime(s, "%Y-%m-%d")
+        except Exception:
+            pass
+        return s
+
+    # ===== Abstraksi / Polimorfisme =====
     @abstractmethod
     def hitung_total(self) -> float:
-        """Menghitung total harga (harus diimplementasi subclass)."""
-        pass
+        """Mengembalikan total harga setelah biaya/komponen kelas."""
+        ...
 
     @abstractmethod
     def deskripsi(self) -> str:
-        """Mengembalikan deskripsi singkat tiket (harus diimplementasi subclass)."""
-        pass
+        """Deskripsi ringkas tiket (untuk demo polimorfisme)."""
+        ...
+
+    # Helper umum
+    def _format_rupiah(self, n: float) -> str:
+        return f"Rp {int(n):,}".replace(",", ".")
